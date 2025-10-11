@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Athan Times</title>
+  <meta name="description" content="Lightweight prayer (Salah) time web app with method selection, countdown, and weekly view." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{--rounded:1.25rem}
+    html,body{height:100%}
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,Apple Color Emoji,Segoe UI Emoji}
+    .card{border-radius:var(--rounded);box-shadow:0 10px 20px rgba(0,0,0,.06)}
+    .grid-auto{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+  <header class="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7 text-emerald-600"><path d="M12 2c-1.1 0-2 .9-2 2v7.59l-3.3-3.3a1 1 0 1 0-1.4 1.42l5 5a1 1 0 0 0 1.7-.7V4a2 2 0 0 1 2-2h6a1 1 0 1 0 0-2h-6Z"/><path d="M4 14a1 1 0 0 0-1 1v3a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4v-3a1 1 0 1 0-2 0v3a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-3a1 1 0 0 0-1-1Z"/></svg>
+      <h1 class="text-xl font-bold">Athan Times</h1>
+      <span id="today" class="ml-auto text-sm text-slate-600"></span>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto p-4 space-y-6">
+    <!-- Controls -->
+    <section class="card bg-white p-4">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
+        <div>
+          <label class="block text-sm font-semibold mb-1">City</label>
+          <input id="city" class="w-full border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="City (e.g., Karachi)" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1">Country</label>
+          <input id="country" class="w-full border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Country (e.g., Pakistan)" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1">Calc Method</label>
+          <select id="method" class="w-full border rounded-xl px-3 py-2">
+            <option value="2">Islamic Society of North America (ISNA)</option>
+            <option value="3">Muslim World League (MWL)</option>
+            <option value="4">Umm al-Qura, Makkah</option>
+            <option value="5">Egyptian General Authority of Survey</option>
+            <option value="7">UOIF (France)</option>
+            <option value="12">Gulf Region</option>
+            <option value="13" selected>Kuwait</option>
+            <option value="14">Qatar</option>
+            <option value="15">Singapore</option>
+            <option value="16">Turkey</option>
+            <option value="99">Custom (API defaults)</option>
+          </select>
+        </div>
+      </div>
+      <div class="mt-3 flex gap-2">
+        <button id="loadBtn" class="px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700">Get Times</button>
+        <button id="todayBtn" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-900 font-semibold hover:bg-slate-300">Today</button>
+        <button id="weekBtn" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-900 font-semibold hover:bg-slate-300">This Week</button>
+      </div>
+    </section>
+
+    <!-- Countdown / Next Prayer -->
+    <section class="card bg-gradient-to-r from-emerald-600 to-emerald-500 p-5 text-white">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+        <div class="text-sm opacity-90">Next prayer</div>
+        <div id="nextName" class="text-2xl font-bold sm:ml-2">—</div>
+        <div class="sm:ml-auto text-sm">Local time: <span id="localTime">—</span></div>
+      </div>
+      <div class="mt-2 text-3xl font-extrabold tracking-tight" id="countdown">--:--:--</div>
+    </section>
+
+    <!-- Results: Today -->
+    <section id="todayCard" class="card bg-white p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <h2 class="text-lg font-bold">Today's Times</h2>
+        <span id="locationLabel" class="text-sm text-slate-600"></span>
+        <span id="hijri" class="ml-auto text-sm text-slate-600"></span>
+      </div>
+      <div id="todayGrid" class="grid-auto"></div>
+    </section>
+
+    <!-- Results: Week -->
+    <section id="weekCard" class="card bg-white p-4 hidden">
+      <div class="flex items-center gap-2 mb-3">
+        <h2 class="text-lg font-bold">This Week</h2>
+        <span id="weekLocation" class="text-sm text-slate-600"></span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="text-slate-500">
+            <tr>
+              <th class="py-2 pr-4">Date</th>
+              <th class="py-2 pr-4">Fajr</th>
+              <th class="py-2 pr-4">Sunrise</th>
+              <th class="py-2 pr-4">Dhuhr</th>
+              <th class="py-2 pr-4">Asr</th>
+              <th class="py-2 pr-4">Maghrib</th>
+              <th class="py-2 pr-4">Isha</th>
+            </tr>
+          </thead>
+          <tbody id="weekBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="py-10 text-center text-xs text-slate-500">
+      Built for simplicity • Uses <code>Aladhan</code> public API • No tracking.
+    </footer>
+  </main>
+
+  <script>
+    const $ = (sel) => document.querySelector(sel);
+    const fmt = (date, opts) => new Intl.DateTimeFormat(undefined, opts).format(date);
+    const to12h = (t) => {
+      const [h, m] = t.split(":").map(Number);
+      const d = new Date(); d.setHours(h, m, 0, 0);
+      return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(d);
+    };
+    const show = (el, yes) => el.classList.toggle('hidden', !yes);
+
+    const state = { mode:'today', city:'', country:'', method:13, format:12, todayTimings:null, todayMeta:null, week:[], nextTimer:null };
+
+    const todayEl=$('#today'),todayGrid=$('#todayGrid'),hijriEl=$('#hijri'),countdownEl=$('#countdown'),nextNameEl=$('#nextName'),localTimeEl=$('#localTime');
+
+    function initDefaults(){
+      const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+      todayEl.textContent=fmt(new Date(),{weekday:'long',year:'numeric',month:'long',day:'numeric',timeZone:tz});
+      $('#method').value=state.method;tickClock();setInterval(tickClock,1000);
+    }
+    function tickClock(){localTimeEl.textContent=fmt(new Date(),{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+
+    async function fetchToday(){
+      const base='https://api.aladhan.com/v1/timingsByAddress';
+      const query=new URLSearchParams({address:`${state.city}, ${state.country}`,method:state.method});
+      const res=await fetch(`${base}?${query.toString()}`);
+      const json=await res.json();
+      if(json.code!==200)throw new Error(json.data||'API error');
+      state.todayTimings=json.data.timings;state.todayMeta=json.data;renderToday();scheduleCountdown();
+    }
+
+    async function fetchWeek(){
+      const base='https://api.aladhan.com/v1/calendarByAddress';
+      const now=new Date();const month=now.getMonth()+1;const year=now.getFullYear();
+      const query=new URLSearchParams({address:`${state.city}, ${state.country}`,method:state.method,month,year});
+      const res=await fetch(`${base}?${query.toString()}`);
+      const json=await res.json();if(json.code!==200)throw new Error(json.data||'API error');
+      const day=now.getDate();const start=Math.max(1,day-(now.getDay()||7)+1);
+      state.week=json.data.slice(start-1,start-1+7);renderWeek();
+    }
+
+    function renderToday(){
+      const t=state.todayTimings;if(!t)return;
+      const order=[['Fajr',t.Fajr],['Sunrise',t.Sunrise],['Dhuhr',t.Dhuhr],['Asr',t.Asr],['Maghrib',t.Maghrib],['Isha',t.Isha]];
+      const fmtTime=(x)=>state.format===12?to12h(x):x;
+      todayGrid.innerHTML=order.map(([n,time])=>`<div class='p-4 border rounded-2xl flex items-center justify-between'><div><div class='text-sm text-slate-500'>${n}</div><div class='text-xl font-bold'>${fmtTime(time)}</div></div></div>`).join('');
+      $('#locationLabel').textContent=`${state.city}, ${state.country}`;
+      const h=state.todayMeta?.date?.hijri;if(h)hijriEl.textContent=`${h.weekday.en}, ${h.day} ${h.month.en} ${h.year} AH`;
+    }
+
+    function renderWeek(){
+      const fmtTime=(x)=>state.format===12?to12h(x):x;
+      $('#weekLocation').textContent=`${state.city}, ${state.country}`;
+      $('#weekBody').innerHTML=state.week.map(r=>{const g=r.timings;const d=r.date.gregorian;const dateStr=`${d.weekday.en}, ${d.day} ${d.month.en}`;return`<tr class='border-b'><td class='py-2 pr-4 whitespace-nowrap'>${dateStr}</td><td class='py-2 pr-4'>${fmtTime(g.Fajr)}</td><td class='py-2 pr-4'>${fmtTime(g.Sunrise)}</td><td class='py-2 pr-4'>${fmtTime(g.Dhuhr)}</td><td class='py-2 pr-4'>${fmtTime(g.Asr)}</td><td class='py-2 pr-4'>${fmtTime(g.Maghrib)}</td><td class='py-2 pr-4'>${fmtTime(g.Isha)}</td></tr>`}).join('');
+    }
+
+    function scheduleCountdown(){
+      if(state.nextTimer)clearInterval(state.nextTimer);
+      const order=['Fajr','Sunrise','Dhuhr','Asr','Maghrib','Isha'];
+      const now=new Date();const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+      const upcoming=order.map(name=>{const [h,m]=state.todayTimings[name].replace(/[^0-9:]/g,'').split(':').map(Number);const when=new Date(today);when.setHours(h,m,0,0);if(when<now)when.setDate(when.getDate()+1);return{name,when};}).sort((a,b)=>a.when-b.when)[0];
+      updateCountdown(upcoming);state.nextTimer=setInterval(()=>updateCountdown(upcoming),1000);
+    }
+
+    function updateCountdown(up){
+      const now=new Date();const diff=up.when-now;if(diff<=0){countdownEl.textContent='Starting…';nextNameEl.textContent=up.name;setTimeout(scheduleCountdown,15000);return;}
+      const hh=Math.floor(diff/3600000);const mm=Math.floor((diff%3600000)/60000);const ss=Math.floor((diff%60000)/1000);
+      countdownEl.textContent=`${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;nextNameEl.textContent=up.name;
+    }
+
+    $('#loadBtn').addEventListener('click',async()=>{
+      state.city=$('#city').value.trim();state.country=$('#country').value.trim();state.method=Number($('#method').value);
+      if(!state.city||!state.country)return alert('Please enter both City and Country');
+      try{await fetchToday();if(state.mode==='week')await fetchWeek();}catch(e){alert(e.message);}
+    });
+
+    $('#todayBtn').addEventListener('click',async()=>{state.mode='today';show($('#todayCard'),true);show($('#weekCard'),false);if(!state.todayTimings)try{await fetchToday();}catch(e){alert(e.message);}});
+    $('#weekBtn').addEventListener('click',async()=>{state.mode='week';show($('#todayCard'),false);show($('#weekCard'),true);if(!state.week.length)try{await fetchWeek();}catch(e){alert(e.message);}});
+
+    initDefaults();
+  </script>
+</body>
+</html>
