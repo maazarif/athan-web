@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quran - Athan Times</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans">
+  <header class="bg-emerald-600 text-white p-4 flex justify-between items-center">
+    <h1 class="text-lg font-bold">📖 Quran</h1>
+    <a href="index.html" class="text-sm bg-white text-emerald-700 px-3 py-1 rounded-lg hover:bg-slate-100">
+      ← Back to Athan Times
+    </a>
+  </header>
+
+  <main class="max-w-3xl mx-auto p-6">
+    <div class="mb-4">
+      <label for="surahSelect" class="block font-semibold mb-1">Select Surah</label>
+      <select id="surahSelect" class="w-full border rounded-xl px-3 py-2">
+        <option>Loading surahs...</option>
+      </select>
+    </div>
+
+    <section id="ayahs" class="space-y-3"></section>
+  </main>
+
+  <footer class="py-6 text-center text-xs text-slate-500">
+    Powered by <a href="https://alquran.cloud/api" target="_blank" class="underline">Al-Quran Cloud API</a>
+  </footer>
+
+  <script>
+    const surahSelect = document.getElementById('surahSelect');
+    const ayahsDiv = document.getElementById('ayahs');
+
+    async function loadSurahs() {
+      const res = await fetch('https://api.alquran.cloud/v1/surah');
+      const data = await res.json();
+      surahSelect.innerHTML = data.data.map(s =>
+        `<option value="${s.number}">${s.number}. ${s.englishName} (${s.englishNameTranslation})</option>`
+      ).join('');
+      loadAyahs(1); // default: Surah Al-Fatihah
+    }
+
+    async function loadAyahs(surahNum) {
+      ayahsDiv.innerHTML = '<p class="text-slate-500">Loading...</p>';
+      const res = await fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/ar.alafasy`);
+      const data = await res.json();
+      const ayahs = data.data.ayahs.map(a =>
+        `<div class="p-3 bg-white rounded-xl shadow-sm">
+          <div class="text-sm text-slate-500 mb-1">${a.numberInSurah}</div>
+          <div class="font-arabic text-right text-xl leading-relaxed">${a.text}</div>
+        </div>`
+      ).join('');
+      ayahsDiv.innerHTML = ayahs;
+    }
+
+    surahSelect.addEventListener('change', e => loadAyahs(e.target.value));
+    loadSurahs();
+  </script>
+</body>
+</html>

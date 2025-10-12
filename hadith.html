@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hadith Collection - Athan Times</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-serif leading-relaxed">
+
+  <!-- Header -->
+  <header class="bg-emerald-600 text-white p-4 flex justify-between items-center">
+    <h1 class="text-lg font-bold">📜 Hadith Collection</h1>
+    <a href="index.html" class="text-sm bg-white text-emerald-700 px-3 py-1 rounded-lg hover:bg-slate-100">
+      ← Back to Athan Times
+    </a>
+  </header>
+
+  <!-- Main -->
+  <main class="max-w-4xl mx-auto p-6">
+    <div class="mb-6">
+      <label for="bookSelect" class="block font-semibold mb-2 text-lg">Select Hadith Book</label>
+      <select id="bookSelect" class="w-full border rounded-xl px-3 py-2">
+        <option>Loading...</option>
+      </select>
+    </div>
+
+    <section id="hadithList" class="space-y-4"></section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="py-6 text-center text-xs text-slate-500">
+    Source: <a href="https://github.com/fawazahmed0/hadith-api" target="_blank" class="underline">Hadith API (by fawazahmed0)</a>
+  </footer>
+
+  <script>
+    const bookSelect = document.getElementById('bookSelect');
+    const hadithList = document.getElementById('hadithList');
+
+    const books = [
+      { id: 'bukhari', name: 'Sahih al-Bukhari' },
+      { id: 'muslim', name: 'Sahih Muslim' },
+      { id: 'tirmidhi', name: 'Jami` at-Tirmidhi' },
+      { id: 'nasai', name: 'Sunan an-Nasa’i' },
+      { id: 'abudawud', name: 'Sunan Abu Dawood' },
+      { id: 'ibnmajah', name: 'Sunan Ibn Majah' }
+    ];
+
+    // Populate the select dropdown
+    bookSelect.innerHTML = books.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+
+    async function loadHadiths(book = 'bukhari') {
+      hadithList.innerHTML = '<p class="text-slate-500 text-center">Loading hadiths...</p>';
+
+      try {
+        // Fetch English translation dataset
+        const res = await fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/eng-${book}.json`);
+        const data = await res.json();
+
+        // Limit to first 10 hadiths for display
+        const hadiths = data.hadiths.slice(0, 10).map(h => `
+          <div class="p-4 bg-white rounded-2xl shadow-sm">
+            <div class="text-sm text-slate-500 mb-2">Hadith #${h.hadithnumber}</div>
+            <div class="text-lg">${h.text}</div>
+          </div>
+        `).join('');
+
+        hadithList.innerHTML = hadiths;
+      } catch (err) {
+        hadithList.innerHTML = `<p class="text-red-600 text-center">Error loading hadiths. Please try again later.</p>`;
+        console.error(err);
+      }
+    }
+
+    bookSelect.addEventListener('change', e => loadHadiths(e.target.value));
+    loadHadiths(); // default load
+  </script>
+
+</body>
+</html>
