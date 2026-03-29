@@ -57,8 +57,6 @@
     const surahSelect = document.getElementById('surahSelect');
     const ayahsDiv = document.getElementById('ayahs');
 
-    const BISMILLAH = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ";
-
     async function loadSurahs() {
       const res = await fetch('https://api.alquran.cloud/v1/surah');
       const data = await res.json();
@@ -85,14 +83,15 @@
       if (surahNum != 9) {
         html += `
           <div class="font-arabic bismillah">
-            ${BISMILLAH}
+            بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
           </div>
         `;
 
-        // Remove Bismillah from first ayah if present
-        if (ayahsData[0].text.startsWith(BISMILLAH)) {
-          ayahsData[0].text = ayahsData[0].text.replace(BISMILLAH, '').trim();
-        }
+        // Remove Bismillah from first ayah (handles Unicode differences)
+        ayahsData[0].text = ayahsData[0].text.replace(
+          /^بِسْمِ.*?ٱلرَّحِيمِ\s*/,
+          ''
+        );
       }
 
       html += ayahsData.map(a =>
