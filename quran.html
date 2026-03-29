@@ -18,6 +18,12 @@
       font-size: 1.75rem;
       line-height: 2.8rem;
     }
+
+    .bismillah {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      font-size: 2rem;
+    }
   </style>
 </head>
 
@@ -51,6 +57,8 @@
     const surahSelect = document.getElementById('surahSelect');
     const ayahsDiv = document.getElementById('ayahs');
 
+    const BISMILLAH = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ";
+
     async function loadSurahs() {
       const res = await fetch('https://api.alquran.cloud/v1/surah');
       const data = await res.json();
@@ -70,7 +78,24 @@
       const res = await fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/ar.alafasy`);
       const data = await res.json();
 
-      const ayahs = data.data.ayahs.map(a =>
+      let ayahsData = data.data.ayahs;
+      let html = "";
+
+      // Show Bismillah separately (except Surah 9)
+      if (surahNum != 9) {
+        html += `
+          <div class="font-arabic bismillah">
+            ${BISMILLAH}
+          </div>
+        `;
+
+        // Remove Bismillah from first ayah if present
+        if (ayahsData[0].text.startsWith(BISMILLAH)) {
+          ayahsData[0].text = ayahsData[0].text.replace(BISMILLAH, '').trim();
+        }
+      }
+
+      html += ayahsData.map(a =>
         `<div class="p-4 bg-white rounded-xl shadow-sm">
           <div class="text-sm text-slate-500 mb-2">
             Ayah ${a.numberInSurah}
@@ -81,7 +106,7 @@
         </div>`
       ).join('');
 
-      ayahsDiv.innerHTML = ayahs;
+      ayahsDiv.innerHTML = html;
     }
 
     surahSelect.addEventListener('change', e => loadAyahs(e.target.value));
